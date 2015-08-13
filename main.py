@@ -50,6 +50,7 @@ class App():
         self.view_list=[]
         self.view_index=0
         self.use_shader=True
+        self.julia_coord_list=[(0,0)]
         
         
 
@@ -94,7 +95,8 @@ class App():
                 self.use_shader = not self.use_shader
             if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.J:
                 self.mode="julia"
-        
+            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.K:
+                self.mode="julia_replay"
 
 
     def calculate(self):
@@ -260,6 +262,10 @@ class App():
         self.win.display()
         self.cycle.update(self.step)
     
+        x,y=self.julia_coord_list[-1]
+        if c_real <> x and c_imag <> y:
+            self.julia_coord_list.append((x,y))
+            
                 
     def run(self):
         
