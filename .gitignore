@@ -49,3 +49,9 @@ main.pyc
 *.log
 debug.pyc
 *.pyc
+*.manifest
+build/temp.win32-2.7/Release/mandel2.obj
+*.exp
+build/temp.win32-2.7/Release/mandel2.lib
+*.obj
+build/temp.win32-2.7/Release/julia.lib
