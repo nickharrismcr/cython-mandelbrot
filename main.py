@@ -3,7 +3,7 @@ Created on 26 Jul 2015
 
 @author: nick
 '''
-# git:  nickharrismcr reiki123
+ 
 
 if __name__ == '__main__':
     pass
