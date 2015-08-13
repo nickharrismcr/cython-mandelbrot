@@ -16,6 +16,7 @@ Set calculation code taken from http://aroberge.blogspot.co.uk/2010/01/profiling
 -  C                 randomize colour cycle palette
 -  J                 switch to Julia mode, use mouse to view Julias at various set coords.
 -  SPACE             switch to zoom mode
+-  D                 play loop of smooth zoom from top level into coordinates previously viewed
 -  [                 slow down colour cycling
 -  ]                 speed up colour cycling
 -  UP                increase iterations
