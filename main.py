@@ -36,7 +36,7 @@ class App():
         self.debug=debug.Debug(self.win)
         self.mandelbrot2=mandel2.Mandelbrot2(self.win.size.x,self.win.size.y,10)
         self.julia=julia.Julia(self.win.size.x/4.0,self.win.size.y/4.0,10)
-        self.julia_full=julia.Julia(self.win.size.x/1.5,self.win.size.y/1.5,10)
+        self.julia_full=julia.Julia(self.win.size.x,self.win.size.y,10)
         self.cycle=cycleshader.CycleShader(win, self.mandelbrot2.get_palette_tex())
         self.screen_tex=sf.Texture.create(self.win.size.x, self.win.size.y)
         
@@ -275,8 +275,7 @@ class App():
             self.julia_full.calc(c_real, c_imag, 120)
             self.julia_full.build_texture()
             self.jsprite=sf.Sprite(self.julia_full.get_render_tex())
-            self.jsprite.position=sf.Vector2(self.win.size.x/4, self.win.size.y/4)
-
+            
             self.win.clear(self.backgnd)
             states = sf.RenderStates()
             if self.use_shader:
@@ -299,8 +298,7 @@ class App():
         else:
         
             self.jsprite=sf.Sprite(self.julia_replay_img_list[self.replay_index])
-            self.jsprite.position=sf.Vector2(self.win.size.x/4, self.win.size.y/4)
-
+          
             self.win.clear(self.backgnd)
             states = sf.RenderStates()
             if self.use_shader:
