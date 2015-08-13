@@ -8,7 +8,7 @@ Created on 26 Jul 2015
 if __name__ == '__main__':
     pass
 
-import sfml as sf, mandel2, cycleshader, debug, mandel_py,random, math, julia
+import sfml as sf, mandel2, cycleshader, debug, mandel_py,random, math, julia, copy
 
 WINDOWED=1
 FULLSCREEN=0
@@ -25,7 +25,7 @@ class App():
             win = sf.RenderWindow(sf.VideoMode(1000,600), "Mandel"  )  
             
         win.vertical_synchronization = True
-        win.framerate_limit = 700
+        win.framerate_limit = 60
         
         self.win=win
         self.win.key_repeat_enabled=False
@@ -52,6 +52,7 @@ class App():
         self.view_index=0
         self.use_shader=True
         self.julia_coord_list=[(0,0)]
+        self.julia_replay_img_list=[]
         self.replay_index=None
         
         
@@ -284,10 +285,34 @@ class App():
             self.win.display()
             self.cycle.update(self.step)
             
+            self.julia_replay_img_list.append(copy.copy(self.julia_full.get_render_tex()))
             self.replay_index+=1
             if self.replay_index==len(self.julia_coord_list):
+                self.replay_index=None
+                self.mode="fast_replay_julia"
+                
+    
+    def fast_replay_julia(self):
+        
+        if self.replay_index==None:
+            self.replay_index=1
+        else:
+        
+            self.jsprite=sf.Sprite(self.julia_replay_img_list[self.replay_index])
+            self.jsprite.position=sf.Vector2(self.win.size.x/4, self.win.size.y/4)
+
+            self.win.clear(self.backgnd)
+            states = sf.RenderStates()
+            if self.use_shader:
+                states.shader = self.cycle.shader
+            self.win.draw(self.jsprite,states)
+            self.win.display()
+            self.cycle.update(self.step)
+            sf.sleep(sf.milliseconds(30))
+            self.replay_index+=1
+            if self.replay_index==len(self.julia_replay_img_list):
                 self.replay_index=1
-               
+          
     def run(self):
         
         
@@ -326,7 +351,11 @@ class App():
     
             elif self.mode=="replay_julia":
                 
-                self.replay_julia()     
+                self.replay_julia()  
+                
+            elif self.mode=="fast_replay_julia":
+                
+                self.fast_replay_julia()        
             
             self.handle_events()                   
  
