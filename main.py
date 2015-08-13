@@ -26,20 +26,21 @@ class App():
             
         win.vertical_synchronization = True
         win.framerate_limit = 700
+        
         self.win=win
         self.win.key_repeat_enabled=False
         self.clock=sf.Clock()
         self.backgnd=sf.Color.BLACK
-        #self.view=sf.View(sf.Rectangle((0, 0), (win.width , win.height)))
-        #self.view.zoom(2)
+        self.aspect=float(win.height)/float(win.width)
         
         self.debug=debug.Debug(self.win)
-        self.aspect=float(win.height)/float(win.width)
         self.mandelbrot2=mandel2.Mandelbrot2(self.win.size.x,self.win.size.y,10)
         self.julia=julia.Julia(self.win.size.x/4.0,self.win.size.y/4.0,10)
+        self.julia_full=julia.Julia(self.win.size.x/1.5,self.win.size.y/1.5,10)
         self.cycle=cycleshader.CycleShader(win, self.mandelbrot2.get_palette_tex())
-        self.step=0.0005
         self.screen_tex=sf.Texture.create(self.win.size.x, self.win.size.y)
+        
+        self.step=0.0005
         self.box=sf.RectangleShape()
         self.box.fill_color=sf.Color.TRANSPARENT
         self.box.outline_color=sf.Color.WHITE
@@ -51,6 +52,7 @@ class App():
         self.view_index=0
         self.use_shader=True
         self.julia_coord_list=[(0,0)]
+        self.replay_index=None
         
         
 
@@ -96,7 +98,8 @@ class App():
             if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.J:
                 self.mode="julia"
             if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.K:
-                self.mode="julia_replay"
+                self.replay_index=None
+                self.mode="replay_julia"
 
 
     def calculate(self):
@@ -188,9 +191,6 @@ class App():
             self.startsize = sf.Vector2(self.win.size.x, self.win.size.y)
             self.endsize = sf.Vector2(w, h)
         self.mode="display_list"
-    
-     
-      
 
     def display_list(self):
         
@@ -199,11 +199,8 @@ class App():
         if self.use_shader:
             states.shader = self.cycle.shader
         self.win.draw(self.screen_spr, states)
-        #self.mandelbrot2.draw_palette(self.win)
-        
         
         if self.boxzoom == 1:
-              
             if self.clock.elapsed_time.milliseconds > 1.0:
                 self.boxzoom=2
                 
@@ -264,9 +261,33 @@ class App():
     
         x,y=self.julia_coord_list[-1]
         if c_real <> x and c_imag <> y:
-            self.julia_coord_list.append((x,y))
+            self.julia_coord_list.append((c_real,c_imag))
             
-                
+    def replay_julia(self):
+        
+        if self.replay_index==None:
+            self.replay_index=1
+        else:
+        
+            c_real, c_imag =self.julia_coord_list[self.replay_index]
+     
+            self.julia_full.calc(c_real, c_imag, 120)
+            self.julia_full.build_texture()
+            self.jsprite=sf.Sprite(self.julia_full.get_render_tex())
+            self.jsprite.position=sf.Vector2(self.win.size.x/4, self.win.size.y/4)
+
+            self.win.clear(self.backgnd)
+            states = sf.RenderStates()
+            if self.use_shader:
+                states.shader = self.cycle.shader
+            self.win.draw(self.jsprite,states)
+            self.win.display()
+            self.cycle.update(self.step)
+            
+            self.replay_index+=1
+            if self.replay_index==len(self.julia_coord_list):
+                self.replay_index=1
+               
     def run(self):
         
         
@@ -303,6 +324,10 @@ class App():
                 
                 self.display_julia()     
     
+            elif self.mode=="replay_julia":
+                
+                self.replay_julia()     
+            
             self.handle_events()                   
  
   
