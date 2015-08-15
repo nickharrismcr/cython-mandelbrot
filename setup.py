@@ -19,11 +19,17 @@ extensions = [
                include_dirs=[numpy.get_include(),],
                extra_compile_args=["/openmp",],
                extra_link_args=["/openmp",],
+               language="c++",
+               library_dirs=["C:\Python27\Lib\site-packages/sfml",],
+               libraries=["sfml-system","sfml-window", "sfml-graphics"]
                 ),
     Extension( "julia" , ["julia.pyx"],
                include_dirs=[numpy.get_include(),],
                extra_compile_args=["/openmp",],
                extra_link_args=["/openmp",],
+               language="c++",
+               library_dirs=["C:\Python27\Lib\site-packages/sfml",],
+               libraries=["sfml-system","sfml-window", "sfml-graphics"]
                 ),
              ]
 

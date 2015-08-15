@@ -5,7 +5,9 @@
 import cython,random
 import numpy as pnp
 cimport numpy as np # for the special numpy stuff
-import sfml as sf
+cimport libcpp.sfml as sfc
+from pysfml.graphics cimport Image as cImage
+import sfml as sf 
 import logging 
 import math 
 
@@ -113,8 +115,9 @@ class Julia(object ):
  
     def calc(self, float c_real, float c_imag, int iterations):       
         
+        self.sf_img=sf.Image.create(self.sizex,self.sizey,sf.Color(0,0,0))
         create_fractal_parallel(c_real, c_imag , iterations, self.palette_size, self.image)
-        self.build_sf_image(self.image)
+        self.build_sf_image(self.image,self.sf_img)
         
  
     def build_texture(self):
@@ -122,17 +125,17 @@ class Julia(object ):
         sprite=sf.Sprite(sf.Texture.from_image(self.sf_img))
         self.render_tex.draw(sprite)
         self.render_tex.display()
+     
+    @cython.boundscheck(False)   
+    def build_sf_image(self, np.ndarray[np.uint8_t,  ndim=3, mode="c"] image, cImage sf_img   ):
         
-    def build_sf_image(self, np.ndarray[np.uint8_t,  ndim=3, mode="c"] image   ):
+        cdef int w,h,x,r,g,b 
+         
         
-        cdef int w,h,x,r,g,b
-
-        col=sf.Color.BLUE
-        sfcol=sf.Color 
-
         w= image.shape[0]
         h= image.shape[1]
-        sf_img=sf.Image.create(self.sizex,self.sizey,sf.Color.BLACK)
+        
+        sfcol=sf.Color
         
         for x in xrange(0,w):
             for y in xrange(0,h):
@@ -140,14 +143,11 @@ class Julia(object ):
                 g=image[x,y,1]
                 b=image[x,y,2]
                
-                col=sfcol(r,g,b,255)
-                sf_img[x,y]=col
+                #sf_img[x,y]=sfcol(r,g,b,255)
+                sf_img.p_this.setPixel(x,y,sfc.Color(r,g,b,255))
                 
-        self.sf_img=sf_img 
-        
+        #self.sf_img=sf_img 
     
- 
-        
     
             
         

@@ -6,6 +6,8 @@ import cython,random
 import numpy as pnp
 cimport numpy as np # for the special numpy stuff
 import sfml as sf
+cimport libcpp.sfml as sfc
+from pysfml.graphics cimport Image as cImage
 import logging 
 import math 
 
@@ -40,59 +42,7 @@ cdef inline int mandel(double real, double imag, int max_iterations=20) nogil:
     
     #printf("%i\n",<int>(mu*256))
     #return <int>(mu*10)
-
-#=================================================================================================================
-
-@cython.boundscheck(False)
-def  create_fractal( 
-                        double min_x,
-                        double max_x,
-                        double min_y,
-                        int nb_iterations,
-                        np.ndarray[np.uint8_t,  ndim=2, mode="c"] colours not None,
-                        np.ndarray[np.uint8_t,  ndim=3, mode="c"] image not None,
-                        np.ndarray[np.int32_t,  ndim=2, mode="c"] data not None):
-    
-    cdef int width, height
-    cdef int x, y, start_y, end_y
-    cdef int nb_colours, colour, count
-    cdef double real, imag, pixel_size
-    
-
-    nb_colours = len(colours)
-    width = image.shape[0]
-    height = image.shape[1]
-    pixel_size = (max_x - min_x) / width
-            
-   
-    
-    for x in range(width):
-        real = min_x + x*pixel_size
-        for y in range(height):
-            
-            imag = min_y + y*pixel_size
-            colour = mandel(real, imag, nb_iterations) % nb_colours
-            
-            data[x, y] = colour 
-            
-            c1=min(255,colour)
-            image[x, y, 0] = c1
-            
-            colour=max(0,colour-c1)
-            c1=min(255,colour)
-            image[x,y,1] = c1
-            
-            colour=max(0,colour-c1)
-            c1=min(255,colour)
-            image[x,y,2] = c1 
-            
-         
-                
-                
-                #image[x, y, 0] = colours[ colour%nb_colours, 0 ]
-                #image[x, y, 1] = colours[ colour%nb_colours, 1 ]
-                #image[x, y, 2] = colours[ colour%nb_colours, 2 ]
-                   
+                 
 #=================================================================================================================
 @cython.boundscheck(False)
 @cython.cdivision
@@ -137,40 +87,7 @@ cdef  create_fractal_parallel(
         colour=max(0,colour-c1)
         c1=min(255,colour)
         image[x,y,2] = c1 
-            
-                
-                #image[x, y, 0] = colours[ colour%nb_colours, 0 ]
-                #image[x, y, 1] = colours[ colour%nb_colours, 1 ]
-                #image[x, y, 2] = colours[ colour%nb_colours, 2 ]
-#------------------------------------------------------------------------------------------------------
-@cython.cdivision                
-@cython.boundscheck(False)                
-cdef refresh_image( 
-                      np.ndarray[np.uint8_t,  ndim=2, mode="c"] colours  ,
-                      np.ndarray[np.uint8_t,  ndim=3, mode="c"] image  ,
-                      np.ndarray[np.int32_t, ndim=2, mode="c"] data  ): 
-        
-        cdef int w,h,x,y, colour, c1,l 
-        
-        w=image.shape[0]
-        h=image.shape[1]
-        
-        arrlen=w*h      
-        for l in prange(arrlen, nogil=True, schedule='dynamic'):
-            
-            x=l//h 
-            y=l%h 
-            colour=data[x, y]  
-            c1=min(255,colour)
-            image[x, y, 0] = c1
-            colour=max(0,colour-c1)
-            c1=min(255,colour)
-            image[x,y,1] = c1
-            colour=max(0,colour-c1)
-            c1=min(255,colour)
-            image[x,y,2] = c1 
-            
-           
+      
                          
 #=================================================================================================================
 class Mandelbrot2(object ):
@@ -228,10 +145,7 @@ class Mandelbrot2(object ):
             
         i=0
         for r,g,b,a in cols:
-            
-            #colours[i,0]=r 
-            #colours[i,1]=g
-            #colours[i,2]=b
+
             self.draw_to_palette_tex(i,(r,g,b))
             i+=1
             
@@ -242,9 +156,12 @@ class Mandelbrot2(object ):
         
         self.clock.restart()
         create_fractal_parallel(min_x, max_x, min_y, iterations, self.colours, self.image, self.data)
+        sf_img=sf.Image.create(self.sizex,self.sizey,sf.Color.BLACK)       
+        self.build_sf_image(self.image,sf_img)     
+        self.sf_img.append(sf_img) 
+        self.curr_image+=1   
         self.calc_time = self.clock.elapsed_time.milliseconds/1000.0
-        self.build_sf_image(self.image)
-        
+    
     def draw_to_palette_tex(self,index,col):
         
         rect=sf.RectangleShape()
@@ -285,28 +202,21 @@ class Mandelbrot2(object ):
         self.render_tex.draw(sprite)
         self.render_tex.display()
         
-    def build_sf_image(self, np.ndarray[np.uint8_t,  ndim=3, mode="c"] image   ):
+    def build_sf_image(self, np.ndarray[np.uint8_t,  ndim=3, mode="c"] image, cImage sf_img   ):
         
         cdef int w,h,x,r,g,b
 
-        col=sf.Color.BLUE
-        sfcol=sf.Color 
-
         w= image.shape[0]
         h= image.shape[1]
-        sf_img=sf.Image.create(self.sizex,self.sizey,sf.Color.BLACK)
-        
+       
         for x in xrange(0,w):
             for y in xrange(0,h):
                 r=image[x,y,0]
                 g=image[x,y,1]
                 b=image[x,y,2]
                
-                col=sfcol(r,g,b,255)
-                sf_img[x,y]=col
-                
-        self.sf_img.append(sf_img) 
-        self.curr_image+=1      
+                sf_img.p_this.setPixel(x,y, sfc.Color(r,g,b,255))
+   
     
     def set_image_index(self,index):
         

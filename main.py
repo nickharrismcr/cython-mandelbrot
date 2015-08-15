@@ -110,14 +110,7 @@ class App():
         self.mandelbrot2.calc(self.xstart, self.xend, self.ystart, self.iters)
         self.mandelbrot2.build_texture()
         self.screen_spr = sf.Sprite(self.mandelbrot2.get_render_tex())
-        
-        #_,_,x,y=self.screen_spr.local_bounds
-        #self.screen_spr.origin=sf.Vector2(x/2,y/2)
-        #x,y=self.win.size.x,self.win.size.y
-        #self.screen_spr.position=sf.Vector2(x,y)
-        
         self.view_list.append(None)
-      
         self.mode = "user_zoom"
        
 
@@ -225,10 +218,6 @@ class App():
             if self.view_index == len(self.view_list):
                 self.view_index = 0
                 
-                #self.mandelbrot2.new_colours()
-                #self.speed = random.randint(1, 60)
-                #self.step = random.uniform(0.00005, 0.0020)
-                
             self.mode="init_display_list"
             
     def display_julia(self):
@@ -242,12 +231,8 @@ class App():
         c_imag = self.ystart +  (float(y)/float(self.win.size.y))*(yend-self.ystart)
      
         self.julia.calc(c_real, c_imag, 120)
-    
         self.julia.build_texture()
-    
         self.jsprite=sf.Sprite(self.julia.get_render_tex())
-   
-        #self.jsprite.scale(sf.Vector2(0.25,0.25))
         self.jsprite.position=sf.Vector2(self.win.size.x*0.75-20,20)
         
         self.win.clear(self.backgnd)
