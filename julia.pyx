@@ -131,11 +131,8 @@ class Julia(object ):
         
         cdef int w,h,x,r,g,b 
          
-        
         w= image.shape[0]
         h= image.shape[1]
-        
-        sfcol=sf.Color
         
         for x in xrange(0,w):
             for y in xrange(0,h):
@@ -143,10 +140,8 @@ class Julia(object ):
                 g=image[x,y,1]
                 b=image[x,y,2]
                
-                #sf_img[x,y]=sfcol(r,g,b,255)
                 sf_img.p_this.setPixel(x,y,sfc.Color(r,g,b,255))
-                
-        #self.sf_img=sf_img 
+
     
     
             

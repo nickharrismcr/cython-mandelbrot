@@ -12,11 +12,11 @@ class Debug():
         self.font=sf.Font.from_file("resources/arial.ttf")
         self.win=win
         self.debug=sf.Text()
-        self.debug.color=sf.Color(190,150,150)
-        self.debug.character_size=20
+        self.debug.color=sf.Color.BLACK
+        self.debug.character_size=10
         self.debug.font=self.font
         self.backgnd=sf.RectangleShape()
-        self.backgnd.fill_color=sf.Color.BLACK
+        self.backgnd.fill_color=sf.Color.WHITE
         self.backgnd.position=sf.Vector2(18,18)
         self.clock=sf.Clock()
         self.debug.position=sf.Vector2(20,20)

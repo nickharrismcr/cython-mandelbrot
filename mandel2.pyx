@@ -101,6 +101,7 @@ class Mandelbrot2(object ):
         self.palette_size=256*3
         self.palette_tex=sf.RenderTexture(self.palette_size*4, 5)
         self.render_tex=sf.RenderTexture(sizex,sizey)
+        self.render_tex.smooth=True
         self.colours=self.make_palette2()
         self.image=pnp.zeros((sizex, sizey, 3 ), dtype=pnp.uint8) + 125
         self.data=pnp.zeros((sizex, sizey), dtype=pnp.int32) + 125
