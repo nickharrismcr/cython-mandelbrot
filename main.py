@@ -43,6 +43,7 @@ class App():
         self.julia_full=julia.Julia(self.win.size.x,self.win.size.y,10)
         self.cycle=cycleshader.CycleShader(win, self.mandelbrot2.get_palette_tex())
         self.screen_tex=sf.Texture.create(self.win.size.x, self.win.size.y)
+        self.screen_tex.smooth=True
         
         
         self.init()
@@ -89,52 +90,59 @@ class App():
         self.s_xstart, self.s_xend, self.s_ystart, self.s_iters= self.xstart, self.xend, self.ystart, self.iters
         
         self.kal_mode=False
+        self.show_palette=True
         self.mode="calc"
+        
+    def key_pressed(self,key):
+        
+        return type(self.event) is sf.KeyEvent and self.event.pressed and self.event.code is key
 
     def handle_events(self):
         
        
         
-        for event in self.win.events:
-            if type(event) is sf.CloseEvent:
+        for self.event in self.win.events:
+            if type(self.event) is sf.CloseEvent:
                 self.win.close()
                 return False
-            if type(event) is sf.KeyEvent and event.code is sf.Keyboard.ESCAPE:
+            if self.key_pressed( sf.Keyboard.ESCAPE):
                 self.win.close()
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.UP:
+            if self.key_pressed( sf.Keyboard.UP):
                 self.iters += 100
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.DOWN:
+            if self.key_pressed( sf.Keyboard.DOWN):
                 self.iters -= 100
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.SPACE:
+            if self.key_pressed( sf.Keyboard.SPACE):
                 self.mode = "calc"
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.RETURN:
+            if self.key_pressed( sf.Keyboard.RETURN):
                 self.mode = "calc"
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.C:
+            if self.key_pressed( sf.Keyboard.C):
                 self.win.mouse_cursor_visible = False
                 self.mandelbrot2.new_colours()
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.L_BRACKET:
+            if self.key_pressed( sf.Keyboard.L_BRACKET):
                 self.step /= 1.1
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.R_BRACKET:
+            if self.key_pressed( sf.Keyboard.R_BRACKET):
                 self.step *= 1.1
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.S:
+            if self.key_pressed( sf.Keyboard.S):
                 self.start_display_list()
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.K:
+            if self.key_pressed( sf.Keyboard.K):
                 self.kal_mode = not self.kal_mode
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.LEFT:
+            if self.key_pressed( sf.Keyboard.LEFT):
                 self.palette_down()
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.RIGHT:
+            if self.key_pressed( sf.Keyboard.RIGHT):
                 self.palette_up()
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.DELETE:
+            if self.key_pressed( sf.Keyboard.DELETE):
                 self.use_shader = not self.use_shader
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.J:
+            if self.key_pressed( sf.Keyboard.J):
                 self.mode="julia"
                 x,y=self.mouse.get_position()
                 self.j_x=float(x)
                 self.j_y=float(y)
-            if type(event) is sf.KeyEvent and event.pressed and event.code is sf.Keyboard.R:
+            if self.key_pressed( sf.Keyboard.R):
                 self.replay_index=None
                 self.mode="replay_julia"
-
+            if self.key_pressed( sf.Keyboard.P):
+                self.show_palette = not self.show_palette
+                
         return True
 
     def calculate(self):
@@ -145,11 +153,11 @@ class App():
         self.mandelbrot2.build_texture()
         self.screen_tex=self.mandelbrot2.get_render_tex()
         self.screen_spr = sf.Sprite(self.screen_tex)
-        settings={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":64,
-                           "speed":0.5, "radius": self.win.size.y/2, "scale":1.0, "depth": 1  }
+        settings={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":16,
+                           "speed":1, "radius": self.win.size.y/2, "scale":1.0, "depth": 1, "bright":255  }
         self.kaleido1=kaleidoscope.Kaleidoscope(settings,self.win)
-        settings2={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":64,
-                           "speed":0.5, "radius": self.win.size.y/2, "scale":2.0, "depth": 1  }
+        settings2={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":16,
+                           "speed":1, "radius": self.win.size.y/2, "scale":2.0, "depth": 1, "bright":200  }
         self.kaleido2=kaleidoscope.Kaleidoscope(settings2,self.win)
         self.view_list.append(None)
         self.debugtimer.restart()
@@ -170,8 +178,8 @@ class App():
             self.kaleido1.draw(self.win,states)
         else:
             self.win.draw(self.screen_spr, states)
-        
-        self.mandelbrot2.draw_palette(self.win)
+        if self.show_palette:
+            self.mandelbrot2.draw_palette(self.win)
         if self.debugtimer.elapsed_time.seconds<2:
             self.debug.display("Iterations : %s  Cycle speed : %s   Calculation time : %s    " % (self.iters, self.mandelbrot2.speed, self.mandelbrot2.calc_time))
         
