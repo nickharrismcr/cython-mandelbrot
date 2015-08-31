@@ -6,6 +6,8 @@ Created on 26 Jul 2015
 
 import sfml as sf, mandel2, cycleshader, debug, mandel_py,random, math, julia, copy,os,datetime,time
 import kaleidoscope
+from settings import Settings
+import copy
 
 WINDOWED=1
 FULLSCREEN=0
@@ -15,10 +17,10 @@ class App():
     
     def __init__(self, mode=FULLSCREEN):
         
-        cont=sf.ContextSettings(antialiasing=3)
+        cont=sf.ContextSettings(antialiasing=8)
         self.winmode=mode
         if mode!=WINDOWED:
-            win = sf.RenderWindow(sf.VideoMode.get_desktop_mode(), "Mandel", sf.window.Style.FULLSCREEN, cont )
+            win = sf.RenderWindow(sf.VideoMode.get_desktop_mode(), "Mandel", sf.window.Style.FULLSCREEN)   #, cont )
         else:
             d_mode=sf.VideoMode.get_desktop_mode()
             w=d_mode.width
@@ -28,7 +30,7 @@ class App():
             win = sf.RenderWindow(sf.VideoMode(w,h), "Mandel"  )  
             
         win.vertical_synchronization = True
-        win.framerate_limit = 60
+        win.framerate_limit = 70
         
         self.win=win
         self.win.key_repeat_enabled=False
@@ -42,6 +44,7 @@ class App():
         self.julia=julia.Julia(self.win.size.x/2.0,self.win.size.y/2.0,10)
         self.julia_full=julia.Julia(self.win.size.x,self.win.size.y,10)
         self.cycle=cycleshader.CycleShader(win, self.mandelbrot2.get_palette_tex())
+        self.kal_cycle=cycleshader.CycleShader(win, self.mandelbrot2.get_palette_tex(), True)
         self.screen_tex=sf.Texture.create(self.win.size.x, self.win.size.y)
         self.screen_tex.smooth=True
         
@@ -59,6 +62,22 @@ class App():
         st = datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d%H%M%S')
         filename=os.curdir+"/screenshots/mandelbrot_"+st+".bmp"
         self.win.capture().to_file(filename)
+        return filename
+    
+    def save(self):
+        
+        try:
+            os.mkdir(os.curdir+"/saves")
+        except:
+            pass
+       
+        ts=time.time()
+        st = datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d%H%M%S')
+        filename=os.curdir+"/saves/mandelbrot_"+st 
+        file=open(filename,"w")
+        set=Settings()
+        set.save(self)
+        set.to_file(file)
         return filename
         
     def init(self):
@@ -92,6 +111,7 @@ class App():
         self.kal_mode=False
         self.show_palette=True
         self.mode="calc"
+        self.next=False
         
     def key_pressed(self,key):
         
@@ -142,7 +162,13 @@ class App():
                 self.mode="replay_julia"
             if self.key_pressed( sf.Keyboard.P):
                 self.show_palette = not self.show_palette
-                
+            if self.key_pressed( sf.Keyboard.W):
+                self.save()
+            if self.key_pressed( sf.Keyboard.Q):
+                self.mode="init_replay_saves"
+            if self.key_pressed( sf.Keyboard.N):
+                self.next=True
+                   
         return True
 
     def calculate(self):
@@ -153,11 +179,11 @@ class App():
         self.mandelbrot2.build_texture()
         self.screen_tex=self.mandelbrot2.get_render_tex()
         self.screen_spr = sf.Sprite(self.screen_tex)
-        settings={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":16,
+        settings={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":32,
                            "speed":1, "radius": self.win.size.y/2, "scale":1.0, "depth": 1, "bright":255  }
         self.kaleido1=kaleidoscope.Kaleidoscope(settings,self.win)
-        settings2={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":16,
-                           "speed":1, "radius": self.win.size.y/2, "scale":2.0, "depth": 1, "bright":200  }
+        settings2={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":32,
+                           "speed":1, "radius": self.win.size.y/2, "scale":2.0, "depth": 1, "bright":255  }
         self.kaleido2=kaleidoscope.Kaleidoscope(settings2,self.win)
         self.view_list.append(None)
         self.debugtimer.restart()
@@ -171,12 +197,15 @@ class App():
         self.win.clear(sf.Color.BLACK)
        
         states = sf.RenderStates()
-        if self.use_shader:
-            states.shader = self.cycle.shader
+        
         if self.kal_mode:
+            if self.use_shader:
+                states.shader = self.kal_cycle.shader
             self.kaleido2.draw(self.win,states)
             self.kaleido1.draw(self.win,states)
         else:
+            if self.use_shader:
+                states.shader = self.cycle.shader
             self.win.draw(self.screen_spr, states)
         if self.show_palette:
             self.mandelbrot2.draw_palette(self.win)
@@ -224,6 +253,7 @@ class App():
         
         if self.cycle_switch:
             self.cycle.update(self.step)
+            self.kal_cycle.update(self.step)
         self.kaleido1.update()
         self.kaleido2.update()
         self.win.display()
@@ -377,6 +407,89 @@ class App():
             self.replay_index+=1
             if self.replay_index==len(self.julia_coord_list):
                 self.replay_index=1
+    
+    def init_replay_saves(self):
+        
+        
+        self.save_list=os.listdir("saves")
+        self.save_no=0
+        self.clock.restart()
+        self.mode="replay_saves"
+        
+        
+        self.save_images=[]
+        self.save_palettes=[]
+        kals=len(self.save_list)
+        ind=1
+        for filename in self.save_list:
+            file=open("saves/"+filename,"r")
+            set=Settings()
+            set.from_file(file)
+            set.load(self)
+            
+            self.mandelbrot2.calc(self.xstart, self.xend, self.ystart,self.iters)
+            self.mandelbrot2.build_texture()
+            self.save_images.append(copy.copy(self.mandelbrot2.get_render_tex()))
+            self.save_palettes.append(copy.copy(self.mandelbrot2.get_palette_tex())) 
+            
+            self.win.clear(self.backgnd)
+            states = sf.RenderStates()
+            if self.use_shader:
+                states.shader = self.cycle.shader
+            self.win.draw(self.screen_spr, states)
+            self.debug.progressbar("Building images ", kals,ind,False)
+            self.win.display()
+            ind+=1          
+    
+        self.next_save()  
+   
+    def next_save(self):
+     
+         
+        self.screen_tex=self.save_images[self.save_no]
+        self.screen_spr = sf.Sprite(self.screen_tex)
+        self.kal_cycle.set_color_table(self.save_palettes[self.save_no])
+        settings={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":32,
+                           "speed":2, "radius": self.win.size.y/2, "scale":0.8, "depth": 1, "bright":255  }
+        self.kaleido1=kaleidoscope.Kaleidoscope(settings,self.win)
+        settings2={ "texture":self.screen_tex,  "position":sf.Vector2(self.win.size.x/2,self.win.size.y/2), "leaves":64,
+                           "speed":1, "radius": self.win.size.y/2, "scale":2.0, "depth": 1, "bright":255  }
+        self.kaleido2=kaleidoscope.Kaleidoscope(settings2,self.win) 
+        self.save_no += 1
+        if self.save_no == len(self.save_list):
+            self.save_no=0
+        self.clock.restart()
+        
+    def replay_saves(self):
+        
+        self.win.mouse_cursor_visible = False
+        self.win.clear(sf.Color.BLACK)
+       
+        states = sf.RenderStates()
+        
+        if self.kal_mode:
+            if self.use_shader:
+                states.shader = self.kal_cycle.shader
+            self.kaleido2.draw(self.win,states)
+            self.kaleido1.draw(self.win,states)
+        else:
+            if self.use_shader:
+                states.shader = self.cycle.shader
+            self.win.draw(self.screen_spr, states)
+        if self.show_palette:
+            self.mandelbrot2.draw_palette(self.win)
+ 
+        if self.cycle_switch:
+            self.cycle.update(self.step)
+            self.kal_cycle.update(self.step)
+            
+        self.kaleido1.update()
+        self.kaleido2.update()
+        self.win.display()
+        
+        if self.clock.elapsed_time.seconds > 36 or self.next==True:
+            self.next_save()
+            self.next=False
           
     def run(self):
 
@@ -412,7 +525,15 @@ class App():
             
         elif self.mode=="fast_replay_julia":
             
-            self.fast_replay_julia()        
+            self.fast_replay_julia() 
+            
+        elif self.mode=="init_replay_saves":
+            
+            self.init_replay_saves()  
+            
+        elif self.mode=="replay_saves":
+            
+            self.replay_saves()     
         
         if not self.handle_events():
             return False
