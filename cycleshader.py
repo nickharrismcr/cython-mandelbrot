@@ -9,7 +9,7 @@ import math
 class CycleShader(object):
 
 
-    def __init__(self, win, colour_lookup_tex ):
+    def __init__(self, win, colour_lookup_tex, kal_mode=False ):
         
         self.win=win
         
@@ -28,15 +28,25 @@ class CycleShader(object):
         uniform sampler2D texture;
         uniform sampler2D colorTable;
         uniform float paletteIndex;
-
+        uniform vec2 scr_centre;
+        
         void main()
         {
-                vec2 pos= gl_TexCoord[0].st; 
+                float Bright=-0.2f;
+ 
+                
+                vec2 pos = gl_TexCoord[0].st; 
+               
                 vec4 pixel = texture2D(texture, pos.xy);  
                 float pi = ( pixel.r > 0.0 ) ? paletteIndex : 0.0 ;
                 vec2 index = vec2(pixel.r+pixel.g+pixel.b+pi,0)/vec2(4.0,0);
                 vec4 indexedColor = ( pixel.r > 0.0) ? texture2D(colorTable, index): vec4(0.0,0.0,0.0,255.0);
-                gl_FragColor =  gl_Color * (indexedColor);
+                pixel =  indexedColor;
+                pixel.rgb = pixel.rgb + vec3(Bright,Bright,Bright) ;
+                
+                //pixel.rgb = ((pixel.rgb - 0.5f) * max(Contrast, 0)) + 0.5f;
+       
+                gl_FragColor =  gl_Color * (pixel);
          }
         """
         
@@ -44,62 +54,42 @@ class CycleShader(object):
         self.frag2="""
         
         uniform sampler2D texture;
-        uniform float time;
-        
-        vec3 rgb2hsv(vec3 c)
-        {
-            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-        
-            float d = q.x - min(q.w, q.y);
-            float e = 1.0e-10;
-            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-        }
-         
-        
-        vec3 hsv2rgb(vec3 c)
-        {
-            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-        }
-        
-        float rand(vec2 co){
-          return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 137.5453);
-        }
+        uniform sampler2D colorTable;
+        uniform float paletteIndex;
+        uniform vec2 scr_centre;
         
         void main()
         {
-            float M_PI=3.14159265358;
-        
-            vec2 pos= gl_TexCoord[0].st; 
-            vec4 pixel = texture2D(texture, pos.xy);  
-            vec3 hsv  =rgb2hsv(pixel.rgb);
-            hsv.x=sin((time*2.0)+hsv.x);
-            
-            pixel.rgb=hsv2rgb(hsv);
-        
-            //float r= abs(cos(time*1.4));
-            //float g= abs(cos(M_PI/4.0+(time*2.5)));
-            //float b= abs(cos(M_PI/2.0+(time*3.6)));
-        
-        
-        
-            //pixel.rgb=vec3(pixel.r*r,pixel.g*g,pixel.b*b);
-        
-            gl_FragColor =  gl_Color * (pixel);
-        }
+                float Bright=-0.2f;
+ 
+                
+                vec2 pos = gl_TexCoord[0].st; 
+                vec2 scrpos = gl_FragCoord.xy;
+                float dist = distance(scrpos,scr_centre)/410.0 ;
+                
+                vec4 pixel = texture2D(texture, pos.xy);  
+                float pi = ( pixel.r > 0.0 ) ? paletteIndex : 0.0 ;
+                vec2 index = vec2(pixel.r+pixel.g+pixel.b+pi,0)/vec2(4.0,0);
+                vec4 indexedColor = ( pixel.r > 0.0) ? texture2D(colorTable, index): vec4(0.0,0.0,0.0,255.0);
+                pixel =  indexedColor;
+                pixel.rgb = pixel.rgb / max(dist,0.5);   //+ vec3(Bright,Bright,Bright) * dist;
+                
+                //pixel.rgb = ((pixel.rgb - 0.5f) * max(Contrast, 0)) + 0.5f;
+       
+                gl_FragColor =  gl_Color * (pixel);
+         }
         """
+        frag=self.frag2 if kal_mode else self.frag 
         
         try:
-            self.shader=sf.Shader.from_memory(vertex=self.vert, fragment=self.frag)
+            self.shader=sf.Shader.from_memory(vertex=self.vert, fragment=frag)
         except IOError as e:
             print "Shader loader exception : \n", e
             raise
             
         self.shader.set_texture_parameter("colorTable", colour_lookup_tex )
         self.shader.set_1float_parameter("paletteIndex", 0 )
+        self.shader.set_2float_parameter("scr_centre", win.size.x / 2, win.size.y / 2);
         self.pal_length=colour_lookup_tex.width
         self.index=0.0
     

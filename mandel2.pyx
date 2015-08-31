@@ -51,17 +51,17 @@ cdef  create_fractal_parallel(
                         double max_x,
                         double min_y,
                         int nb_iterations,
-                        np.ndarray[np.uint8_t,  ndim=2, mode="c"] colours  ,
+                        long nb_colours,
                         np.ndarray[np.uint8_t,  ndim=3, mode="c"] image  ,
                         np.ndarray[np.int32_t,  ndim=2, mode="c"] data  ):
     
     cdef int width, height
     cdef int x, y, start_y, end_y
-    cdef long nb_colours, colour, count
+    cdef long   colour, count
     cdef double real, imag, pixel_size
     cdef int c1,l
 
-    nb_colours = len(colours)
+    
     width = image.shape[0]
     height = image.shape[1]
     pixel_size = (max_x - min_x) / width
@@ -102,7 +102,7 @@ class Mandelbrot2(object ):
         self.palette_tex=sf.RenderTexture(self.palette_size*4, 5)
         self.render_tex=sf.RenderTexture(sizex,sizey)
         self.render_tex.smooth=True
-        self.colours=self.make_palette2()
+        self.make_palette2()
         self.image=pnp.zeros((sizex, sizey, 3 ), dtype=pnp.uint8) + 125
         self.data=pnp.zeros((sizex, sizey), dtype=pnp.int32) + 125
         self.logger=logging.getLogger("mandlebrot")
@@ -112,6 +112,7 @@ class Mandelbrot2(object ):
         self.sf_img=[]
         self.curr_image=-1
         self.calc_time=0.0
+        self.palette_list=[]
         
         
         
@@ -125,11 +126,11 @@ class Mandelbrot2(object ):
        
     def new_colours(self):
         
-        self.colours=self.make_palette2()
+        self.make_palette2()
    
     def make_palette2(self):
         
-        colours=pnp.zeros((self.palette_size,3), dtype=pnp.uint8) + 125
+        
         cdef int i 
         cdef int r,g,b,a 
         col=sf.Color.RED 
@@ -151,12 +152,12 @@ class Mandelbrot2(object ):
             i+=1
             
         self.palette_tex.display()
-        return pnp.array(colours, dtype=pnp.uint8)   
+        self.palette_list=cols 
     
     def calc(self, min_x, max_x, min_y, iterations):       
         
         self.clock.restart()
-        create_fractal_parallel(min_x, max_x, min_y, iterations, self.colours, self.image, self.data)
+        create_fractal_parallel(min_x, max_x, min_y, iterations, self.palette_size, self.image, self.data)
         sf_img=sf.Image.create(self.sizex,self.sizey,sf.Color.BLACK)       
         self.build_sf_image(self.image,sf_img)     
         self.sf_img.append(sf_img) 
@@ -186,7 +187,7 @@ class Mandelbrot2(object ):
         rect=sf.RectangleShape()
         rect.position=sf.Vector2(0,h-7)
         rect.size=sf.Vector2(w,7)
-        r,g,b=self.colours[-1]
+        
         rect.fill_color=sf.Color.BLACK
         win.draw(rect)
         
@@ -226,7 +227,18 @@ class Mandelbrot2(object ):
         self.curr_image=index
         
     
+        
+    def load_colours(self,list colours):
+        
+        cdef int i,r,g,b,a 
+        
+        i=0
+        for r,g,b,a in colours:
+
+            self.draw_to_palette_tex(i,(r,g,b))
+            i+=1
             
+        self.palette_tex.display()    
         
 #######################################################################################################################
 def gen_random_color(col, delta):

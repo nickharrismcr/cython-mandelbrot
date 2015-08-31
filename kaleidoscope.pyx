@@ -1,10 +1,10 @@
 import sfml as sf
 import random, math, os, itertools  
-from operator import pos
-from imageop import scale
-from idlelib.ZoomHeight import zoom_height
+ 
+ 
 cimport libcpp.sfml as sfc
 from pysfml.window cimport Window as cWindow 
+from pysfml.graphics cimport RenderStates as cRenderStates 
 from pysfml.system cimport Vector2 as cVector2
 from pysfml.graphics cimport Texture as cTexture
 from pysfml.graphics cimport ConvexShape as cConvexShape
@@ -33,6 +33,7 @@ cdef class Kaleidoscope(object):
     cdef sfc.View view 
     cdef float rotate_amount 
     cdef cConvexShape polygon 
+    cdef int toggle 
     
     def __init__(self, dict settings, cWindow win):
         
@@ -45,7 +46,7 @@ cdef class Kaleidoscope(object):
         self.tex_dy=self.tex_dx
         self.bright=settings["bright"]
         self.currbright=self.bright
-        
+        self.toggle=False 
         self.tri_width=(self.radius*2*math.pi/self.leaves)+3
         self.tex_x=self.tex.width/2
         self.tex_y=self.tex.height/2
@@ -69,8 +70,14 @@ cdef class Kaleidoscope(object):
         
     def update(self):
         
+        self.toggle = 1 if self.toggle==0 else 0
+        
+        if self.toggle==1:
+            return
+        
         self.tex_x+=self.tex_dx
         self.tex_y+=self.tex_dy
+         
         
         if self.tex_x<=0 or self.tex_x>=self.tex.width-self.tex_w:
             self.tex_dx=-self.tex_dx
@@ -78,19 +85,22 @@ cdef class Kaleidoscope(object):
             self.tex_dy=-self.tex_dy
 
         
-    def draw(self,win,states):
+    def draw(self,cWindow win not None,cRenderStates states not None):
         
         cdef int i 
-            
+        cdef float rot
+        cdef cConvexShape poly 
+           
         rec1=sf.Rectangle(cVector2(self.tex_x,self.tex_y),cVector2(self.tex_w,self.tex_h))
         rec2=sf.Rectangle(cVector2(self.tex_x,self.tex_y+self.tex_h),cVector2(self.tex_w, -self.tex_h))
         self.polygon.rotation=0
         poly=self.polygon
+        polyrot=self.polygon.rotate
         rot=self.rotate_amount
         
         for i in range(0,self.leaves):
             
-            poly.rotate(rot)
+            polyrot(rot)
             if i%2==0:
                 poly.texture_rectangle=rec1
             else:

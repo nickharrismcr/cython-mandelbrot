@@ -12,11 +12,11 @@ class Debug():
         self.font=sf.Font.from_file("resources/arial.ttf")
         self.win=win
         self.debug=sf.Text()
-        self.debug.color=sf.Color.BLACK
+        self.debug.color=sf.Color.WHITE
         self.debug.character_size=10
         self.debug.font=self.font
         self.backgnd=sf.RectangleShape()
-        self.backgnd.fill_color=sf.Color.WHITE
+        self.backgnd.fill_color=sf.Color.BLACK
         self.backgnd.position=sf.Vector2(18,18)
         self.clock=sf.Clock()
         self.debug.position=sf.Vector2(20,20)
@@ -50,25 +50,25 @@ class Debug():
             
     def progressbar(self, legend,  max,  curr, draw=False):
         
-        self.debug.string=legend
+         
         if draw:
             self.win.clear(sf.Color.WHITE)
             
         
         rec1 = sf.RectangleShape()
         rec1.position=sf.Vector2(20,80)
-        rec1.size=sf.Vector2(200,60)
+        rec1.size=sf.Vector2(200,40)
         rec1.outline_color=sf.Color.BLACK
         rec1.outline_thickness = 2
-        rec1.fill_color=sf.Color.TRANSPARENT
+        rec1.fill_color=sf.Color.BLACK
         
         rec2 = sf.RectangleShape()
         rec2.position=sf.Vector2(25,85)
         w=int((float(curr)/float(max))*190.0)
-        rec2.size=sf.Vector2(w,50)
+        rec2.size=sf.Vector2(w,30)
         rec2.fill_color=sf.Color(0,200,0)
         
-        self.win.draw(self.debug)
+        self.display(legend)
         self.win.draw(rec1)
         self.win.draw(rec2)
         
